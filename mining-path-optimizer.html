@@ -311,17 +311,16 @@
                         <li>Upload your mining map</li>
                         <li>Set your current position (blue ★)</li>
                         <li>Optionally set end position (orange 🏁)</li>
-                        <li>Draw barriers (impassable areas)</li>
                         <li>Click to mark mining nodes (red)</li>
                         <li>Click "Calculate Path" for route</li>
                         <li>Collect nodes to update position & reoptimize</li>
-                        <li>Right-click to remove markers/barriers</li>
+                        <li>Right-click to remove markers</li>
                     </ul>
                 </div>
 
                 <button class="btn-start" id="setStartBtn" disabled>📍 Set Current Position</button>
                 <button class="btn-end" id="setEndBtn" disabled>🏁 Set End Position</button>
-                <button class="btn-barrier" id="drawBarrierBtn" disabled>🚧 Draw Barrier</button>
+                <button class="btn-barrier" id="drawBarrierBtn" disabled style="display: none;">🚧 Draw Barrier</button>
                 <button class="btn-collect" id="collectNodeBtn" disabled>✅ Collect Node</button>
                 <button class="btn-primary" id="calculateBtn" disabled>Calculate Optimal Path</button>
                 <button class="btn-secondary" id="clearNodesBtn" disabled>Clear Nodes</button>
@@ -341,7 +340,7 @@
                         <span class="stat-label">Mining Nodes:</span>
                         <span class="stat-value" id="nodeCount">0</span>
                     </div>
-                    <div class="stat">
+                    <div class="stat" style="display: none;">
                         <span class="stat-label">Barriers:</span>
                         <span class="stat-value" id="barrierCount">0</span>
                     </div>
