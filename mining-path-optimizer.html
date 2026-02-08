@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mining Path Optimizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #f5f5f5;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 600px;
+        }
+
+        #canvas {
+            max-width: 100%;
+            max-height: 800px;
+            cursor: crosshair;
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-start {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #2980b9;
+        }
+
+        .btn-start.active {
+            background: #27ae60;
+            box-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+        }
+
+        .btn-end {
+            background: #e67e22;
+            color: white;
+        }
+
+        .btn-end:hover {
+            background: #d35400;
+        }
+
+        .btn-end.active {
+            background: #27ae60;
+            box-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+        }
+
+        .btn-barrier {
+            background: #c0392b;
+            color: white;
+        }
+
+        .btn-barrier:hover {
+            background: #a93226;
+        }
+
+        .btn-barrier.active {
+            background: #27ae60;
+            box-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+        }
+
+        .btn-collect {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-collect:hover {
+            background: #229954;
+        }
+
+        .btn-collect.active {
+            background: #f39c12;
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.5);
+        }
+
+        .warning-info {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .warning-info h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .info-panel {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .info-panel h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .stat:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .node-list {
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .node-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+            font-size: 14px;
+        }
+
+        .path-info {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .path-info h4 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .instructions li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⛏️ Mining Path Optimizer</h1>
+            <p>Upload your map, mark nodes, and find the optimal mining route</p>
+        </div>
+
+        <div class="content">
+            <div class="canvas-container">
+                <canvas id="canvas"></canvas>
+            </div>
+
+            <div class="controls">
+                <div class="upload-area" id="uploadArea">
+                    <h3>📁 Upload Map Image</h3>
+                    <p style="margin-top: 10px; color: #666;">Click or drag & drop</p>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+
+                <div class="instructions">
+                    <strong>📋 Instructions:</strong>
+                    <ul>
+                        <li>Upload your mining map</li>
+                        <li>Set your current position (blue ★)</li>
+                        <li>Optionally set end position (orange 🏁)</li>
+                        <li>Draw barriers (impassable areas)</li>
+                        <li>Click to mark mining nodes (red)</li>
+                        <li>Click "Calculate Path" for route</li>
+                        <li>Collect nodes to update position & reoptimize</li>
+                        <li>Right-click to remove markers/barriers</li>
+                    </ul>
+                </div>
+
+                <button class="btn-start" id="setStartBtn" disabled>📍 Set Current Position</button>
+                <button class="btn-end" id="setEndBtn" disabled>🏁 Set End Position</button>
+                <button class="btn-barrier" id="drawBarrierBtn" disabled>🚧 Draw Barrier</button>
+                <button class="btn-collect" id="collectNodeBtn" disabled>✅ Collect Node</button>
+                <button class="btn-primary" id="calculateBtn" disabled>Calculate Optimal Path</button>
+                <button class="btn-secondary" id="clearNodesBtn" disabled>Clear Nodes</button>
+                <button class="btn-danger" id="resetBtn" disabled>Reset Everything</button>
+
+                <div class="info-panel">
+                    <h3>📊 Statistics</h3>
+                    <div class="stat">
+                        <span class="stat-label">Current Position:</span>
+                        <span class="stat-value" id="startStatus">Not Set</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">End Position:</span>
+                        <span class="stat-value" id="endStatus">Not Set</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Mining Nodes:</span>
+                        <span class="stat-value" id="nodeCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Barriers:</span>
+                        <span class="stat-value" id="barrierCount">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Path Length:</span>
+                        <span class="stat-value" id="pathLength">-</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Zones Covered:</span>
+                        <span class="stat-value" id="zonesCovered">0/9</span>
+                    </div>
+                </div>
+
+                <div class="info-panel">
+                    <h3>📍 Node List</h3>
+                    <div class="node-list" id="nodeList">
+                        <p style="color: #999; text-align: center;">No nodes marked yet</p>
+                    </div>
+                </div>
+
+                <div id="pathInfo" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const clearNodesBtn = document.getElementById('clearNodesBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const setStartBtn = document.getElementById('setStartBtn');
+        const setEndBtn = document.getElementById('setEndBtn');
+        const drawBarrierBtn = document.getElementById('drawBarrierBtn');
+        const collectNodeBtn = document.getElementById('collectNodeBtn');
+
+        let image = null;
+        let currentPosition = null;
+        let endPosition = null;
+        let nodes = [];
+        let barriers = [];
+        let path = [];
+        let gridCols = 3;
+        let gridRows = 3;
+        let settingStartMode = false;
+        let settingEndMode = false;
+        let drawingBarrierMode = false;
+        let collectingNodeMode = false;
+        let barrierStartPoint = null;
+
+        // Upload handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                loadImage(file);
+            }
+        });
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                image = new Image();
+                image.onload = () => {
+                    initCanvas();
+                    resetBtn.disabled = false;
+                    setStartBtn.disabled = false;
+                    setEndBtn.disabled = false;
+                    drawBarrierBtn.disabled = false;
+                    collectNodeBtn.disabled = false;
+                };
+                image.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function initCanvas() {
+            const maxWidth = 1000;
+            const maxHeight = 800;
+            let width = image.width;
+            let height = image.height;
+
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+            if (height > maxHeight) {
+                width = (width * maxHeight) / height;
+                height = maxHeight;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            currentPosition = null;
+            endPosition = null;
+            nodes = [];
+            barriers = [];
+            path = [];
+            settingStartMode = false;
+            settingEndMode = false;
+            drawingBarrierMode = false;
+            collectingNodeMode = false;
+            barrierStartPoint = null;
+            draw();
+            updateUI();
+        }
+
+        function draw() {
+            if (!image) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            // Draw 9-zone grid
+            drawGrid();
+
+            // Draw barriers
+            drawBarriers();
+
+            // Draw path if exists
+            if (path.length > 1) {
+                drawPath();
+            }
+
+            // Draw nodes
+            drawNodes();
+
+            // Draw current position
+            if (currentPosition) {
+                drawCurrentPosition();
+            }
+
+            // Draw end position
+            if (endPosition) {
+                drawEndPosition();
+            }
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 5]);
+
+            const cellWidth = canvas.width / gridCols;
+            const cellHeight = canvas.height / gridRows;
+
+            // Vertical lines
+            for (let i = 1; i < gridCols; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellWidth, 0);
+                ctx.lineTo(i * cellWidth, canvas.height);
+                ctx.stroke();
+            }
+
+            // Horizontal lines
+            for (let i = 1; i < gridRows; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellHeight);
+                ctx.lineTo(canvas.width, i * cellHeight);
+                ctx.stroke();
+            }
+
+            ctx.setLineDash([]);
+
+            // Draw zone numbers
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.lineWidth = 3;
+
+            for (let row = 0; row < gridRows; row++) {
+                for (let col = 0; col < gridCols; col++) {
+                    const x = col * cellWidth + cellWidth / 2;
+                    const y = row * cellHeight + cellHeight / 2;
+                    const zoneNum = row * gridCols + col + 1;
+                    ctx.strokeText(zoneNum, x, y);
+                    ctx.fillText(zoneNum, x, y);
+                }
+            }
+        }
+
+        function drawNodes() {
+            nodes.forEach((node, index) => {
+                // Node circle
+                ctx.fillStyle = '#ff6b6b';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Node number
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(index + 1, node.x, node.y);
+            });
+        }
+
+        function drawCurrentPosition() {
+            // Outer glow
+            ctx.fillStyle = 'rgba(52, 152, 219, 0.3)';
+            ctx.beginPath();
+            ctx.arc(currentPosition.x, currentPosition.y, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Main circle
+            ctx.fillStyle = '#3498db';
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(currentPosition.x, currentPosition.y, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Star/position icon
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('★', currentPosition.x, currentPosition.y);
+        }
+
+        function drawEndPosition() {
+            // Outer glow
+            ctx.fillStyle = 'rgba(230, 126, 34, 0.3)';
+            ctx.beginPath();
+            ctx.arc(endPosition.x, endPosition.y, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Main circle
+            ctx.fillStyle = '#e67e22';
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(endPosition.x, endPosition.y, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Flag icon
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🏁', endPosition.x, endPosition.y);
+        }
+
+        function drawBarriers() {
+            barriers.forEach(barrier => {
+                ctx.strokeStyle = '#c0392b';
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.setLineDash([]);
+
+                ctx.beginPath();
+                ctx.moveTo(barrier.x1, barrier.y1);
+                ctx.lineTo(barrier.x2, barrier.y2);
+                ctx.stroke();
+
+                // Draw endpoints
+                ctx.fillStyle = '#c0392b';
+                ctx.beginPath();
+                ctx.arc(barrier.x1, barrier.y1, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(barrier.x2, barrier.y2, 6, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw temporary barrier while drawing
+            if (drawingBarrierMode && barrierStartPoint) {
+                ctx.strokeStyle = 'rgba(192, 57, 43, 0.5)';
+                ctx.lineWidth = 5;
+                ctx.setLineDash([10, 5]);
+
+                // This will be updated in mousemove
+            }
+        }
+
+        function drawPath() {
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash([]);
+
+            // Draw lines
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i].x, path[i].y);
+            }
+            ctx.stroke();
+
+            // Draw arrows
+            for (let i = 0; i < path.length - 1; i++) {
+                drawArrow(path[i], path[i + 1]);
+            }
+        }
+
+        function drawArrow(from, to) {
+            const angle = Math.atan2(to.y - from.y, to.x - from.x);
+            const headLength = 15;
+
+            const endX = to.x - Math.cos(angle) * 15; // Stop before the node
+            const endY = to.y - Math.sin(angle) * 15;
+
+            ctx.fillStyle = '#4CAF50';
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(
+                endX - headLength * Math.cos(angle - Math.PI / 6),
+                endY - headLength * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+                endX - headLength * Math.cos(angle + Math.PI / 6),
+                endY - headLength * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function getZone(x, y) {
+            const col = Math.floor(x / (canvas.width / gridCols));
+            const row = Math.floor(y / (canvas.height / gridRows));
+            return row * gridCols + col + 1;
+        }
+
+        function distance(a, b) {
+            return Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
+        }
+
+        // Check if two line segments intersect
+        function lineSegmentsIntersect(p1, p2, p3, p4) {
+            const ccw = (A, B, C) => {
+                return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x);
+            };
+            return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4);
+        }
+
+        // Check if a path segment crosses any barriers
+        function checkPathBarrierIntersections(path) {
+            const intersections = [];
+            for (let i = 0; i < path.length - 1; i++) {
+                const p1 = path[i];
+                const p2 = path[i + 1];
+
+                for (let j = 0; j < barriers.length; j++) {
+                    const barrier = barriers[j];
+                    if (lineSegmentsIntersect(
+                        p1, p2,
+                        { x: barrier.x1, y: barrier.y1 },
+                        { x: barrier.x2, y: barrier.y2 }
+                    )) {
+                        intersections.push({ segment: i, barrier: j });
+                    }
+                }
+            }
+            return intersections;
+        }
+
+        // Check if point is near a barrier line
+        function isPointNearBarrier(point, barrier, threshold = 10) {
+            const A = point.x - barrier.x1;
+            const B = point.y - barrier.y1;
+            const C = barrier.x2 - barrier.x1;
+            const D = barrier.y2 - barrier.y1;
+
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+
+            if (lenSq !== 0) {
+                param = dot / lenSq;
+            }
+
+            let xx, yy;
+
+            if (param < 0) {
+                xx = barrier.x1;
+                yy = barrier.y1;
+            } else if (param > 1) {
+                xx = barrier.x2;
+                yy = barrier.y2;
+            } else {
+                xx = barrier.x1 + param * C;
+                yy = barrier.y1 + param * D;
+            }
+
+            const dx = point.x - xx;
+            const dy = point.y - yy;
+            return Math.sqrt(dx * dx + dy * dy) < threshold;
+        }
+
+        // Check if a direct path between two points crosses any barriers
+        function pathCrossesBarrier(p1, p2) {
+            for (let i = 0; i < barriers.length; i++) {
+                const barrier = barriers[i];
+                if (lineSegmentsIntersect(
+                    p1, p2,
+                    { x: barrier.x1, y: barrier.y1 },
+                    { x: barrier.x2, y: barrier.y2 }
+                )) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Build visibility graph and find optimal path using Dijkstra's algorithm
+        function findOptimalPath(nodes, startPos, endPos) {
+            if (nodes.length === 0) return [];
+
+            // Create a list of all points (start + nodes + end + barrier endpoints as waypoints)
+            const allPoints = [];
+            const startIndex = startPos ? 0 : null;
+            const nodeStartIndex = startPos ? 1 : 0;
+
+            if (startPos) allPoints.push(startPos);
+            allPoints.push(...nodes);
+            if (endPos) allPoints.push(endPos);
+
+            // Add barrier endpoints as potential waypoints for routing around obstacles
+            const waypointStartIndex = allPoints.length;
+            for (const barrier of barriers) {
+                allPoints.push({
+                    x: barrier.x1,
+                    y: barrier.y1,
+                    zone: getZone(barrier.x1, barrier.y1),
+                    isWaypoint: true
+                });
+                allPoints.push({
+                    x: barrier.x2,
+                    y: barrier.y2,
+                    zone: getZone(barrier.x2, barrier.y2),
+                    isWaypoint: true
+                });
+            }
+
+            const n = allPoints.length;
+
+            // Build adjacency matrix with distances (Infinity if path crosses barrier)
+            const graph = Array(n).fill(null).map(() => Array(n).fill(Infinity));
+
+            for (let i = 0; i < n; i++) {
+                graph[i][i] = 0;
+                for (let j = i + 1; j < n; j++) {
+                    if (!pathCrossesBarrier(allPoints[i], allPoints[j])) {
+                        const dist = distance(allPoints[i], allPoints[j]);
+                        graph[i][j] = dist;
+                        graph[j][i] = dist;
+                    }
+                }
+            }
+
+            // Find shortest path visiting all nodes using TSP with Dijkstra for each segment
+            const nodeIndices = [];
+            for (let i = nodeStartIndex; i < nodeStartIndex + nodes.length; i++) {
+                nodeIndices.push(i);
+            }
+
+            // Use nearest neighbor TSP with visibility graph
+            const visited = new Set();
+            const path = [];
+            let currentIdx = startPos ? 0 : nodeIndices[0];
+
+            if (startPos) {
+                path.push(allPoints[currentIdx]);
+            } else {
+                path.push(allPoints[currentIdx]);
+                visited.add(currentIdx);
+            }
+
+            // Visit all mining nodes
+            while (visited.size < nodes.length) {
+                let bestNext = -1;
+                let bestDist = Infinity;
+                let bestPath = null;
+
+                // Find nearest unvisited node using Dijkstra
+                for (const nodeIdx of nodeIndices) {
+                    if (visited.has(nodeIdx)) continue;
+
+                    const shortestPath = dijkstra(graph, currentIdx, nodeIdx, allPoints);
+                    if (shortestPath && shortestPath.distance < bestDist) {
+                        bestDist = shortestPath.distance;
+                        bestNext = nodeIdx;
+                        bestPath = shortestPath.path;
+                    }
+                }
+
+                if (bestNext === -1) break; // No path found
+
+                // Add intermediate points if path goes around barriers
+                for (let i = 1; i < bestPath.length; i++) {
+                    if (!path.includes(allPoints[bestPath[i]])) {
+                        path.push(allPoints[bestPath[i]]);
+                    }
+                }
+
+                visited.add(bestNext);
+                currentIdx = bestNext;
+            }
+
+            // Add path to end position if specified
+            if (endPos) {
+                const endIdx = allPoints.length - 1;
+                const finalPath = dijkstra(graph, currentIdx, endIdx, allPoints);
+                if (finalPath) {
+                    for (let i = 1; i < finalPath.path.length; i++) {
+                        if (!path.includes(allPoints[finalPath.path[i]])) {
+                            path.push(allPoints[finalPath.path[i]]);
+                        }
+                    }
+                }
+            }
+
+            return path;
+        }
+
+        // Dijkstra's algorithm to find shortest path between two points
+        function dijkstra(graph, start, end, points) {
+            const n = graph.length;
+            const dist = Array(n).fill(Infinity);
+            const prev = Array(n).fill(null);
+            const visited = new Set();
+
+            dist[start] = 0;
+
+            for (let i = 0; i < n; i++) {
+                let u = -1;
+                let minDist = Infinity;
+
+                for (let j = 0; j < n; j++) {
+                    if (!visited.has(j) && dist[j] < minDist) {
+                        minDist = dist[j];
+                        u = j;
+                    }
+                }
+
+                if (u === -1 || u === end) break;
+                visited.add(u);
+
+                for (let v = 0; v < n; v++) {
+                    if (!visited.has(v) && graph[u][v] !== Infinity) {
+                        const alt = dist[u] + graph[u][v];
+                        if (alt < dist[v]) {
+                            dist[v] = alt;
+                            prev[v] = u;
+                        }
+                    }
+                }
+            }
+
+            if (dist[end] === Infinity) return null;
+
+            // Reconstruct path
+            const path = [];
+            let current = end;
+            while (current !== null) {
+                path.unshift(current);
+                current = prev[current];
+            }
+
+            return { distance: dist[end], path };
+        }
+
+        // Legacy function name for compatibility
+        function nearestNeighborPath(nodes, startPos, endPos) {
+            return findOptimalPath(nodes, startPos, endPos);
+        }
+
+        // Collect a node: move to it, remove it, and recalculate path
+        function collectNode(index) {
+            if (index < 0 || index >= nodes.length) return;
+
+            // Set current position to the collected node's position
+            currentPosition = { ...nodes[index] };
+
+            // Remove the collected node
+            nodes.splice(index, 1);
+
+            // Clear the path
+            path = [];
+
+            // Auto-recalculate if there are still nodes remaining
+            if (nodes.length > 0) {
+                path = nearestNeighborPath(nodes, currentPosition, endPosition);
+
+                let totalDistance = 0;
+                for (let i = 0; i < path.length - 1; i++) {
+                    totalDistance += distance(path[i], path[i + 1]);
+                }
+
+                document.getElementById('pathLength').textContent = Math.round(totalDistance) + ' px';
+
+                // Show success message
+                const pathInfo = document.getElementById('pathInfo');
+                pathInfo.style.display = 'block';
+                pathInfo.className = 'path-info';
+                pathInfo.innerHTML = `
+                    <h4>✅ Node Collected & Path Recalculated!</h4>
+                    <p><strong>${nodes.length}</strong> node${nodes.length !== 1 ? 's' : ''} remaining. Position updated to collected node.</p>
+                `;
+            } else {
+                // All nodes collected
+                document.getElementById('pathLength').textContent = '-';
+                const pathInfo = document.getElementById('pathInfo');
+                pathInfo.style.display = 'block';
+                pathInfo.className = 'path-info';
+                pathInfo.innerHTML = `
+                    <h4>🎉 All Nodes Collected!</h4>
+                    <p>Mining route complete. Add more nodes or reset to start a new route.</p>
+                `;
+            }
+
+            draw();
+            updateUI();
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (!image) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (settingStartMode) {
+                // Set current position
+                currentPosition = { x, y, zone: getZone(x, y) };
+                settingStartMode = false;
+                setStartBtn.classList.remove('active');
+                setStartBtn.textContent = '📍 Set Current Position';
+                path = []; // Clear path when start position changes
+                draw();
+                updateUI();
+            } else if (settingEndMode) {
+                // Set end position
+                endPosition = { x, y, zone: getZone(x, y) };
+                settingEndMode = false;
+                setEndBtn.classList.remove('active');
+                setEndBtn.textContent = '🏁 Set End Position';
+                path = []; // Clear path when end position changes
+                draw();
+                updateUI();
+            } else if (drawingBarrierMode) {
+                // Draw barrier (two clicks)
+                if (!barrierStartPoint) {
+                    barrierStartPoint = { x, y };
+                    drawBarrierBtn.textContent = '🚧 Click End Point';
+                } else {
+                    barriers.push({
+                        x1: barrierStartPoint.x,
+                        y1: barrierStartPoint.y,
+                        x2: x,
+                        y2: y
+                    });
+                    barrierStartPoint = null;
+                    drawBarrierBtn.textContent = '🚧 Click Start Point';
+                    path = []; // Clear path when barrier added
+                    draw();
+                    updateUI();
+                }
+            } else if (collectingNodeMode) {
+                // Collect node (find closest node to click)
+                if (nodes.length > 0) {
+                    let closestIndex = -1;
+                    let minDist = 30; // 30px radius for collection
+
+                    nodes.forEach((node, index) => {
+                        const dist = distance({ x, y }, node);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestIndex = index;
+                        }
+                    });
+
+                    if (closestIndex !== -1) {
+                        collectNode(closestIndex);
+                    }
+                }
+            } else {
+                // Add mining node
+                nodes.push({ x, y, zone: getZone(x, y) });
+                path = []; // Clear path when new node added
+                draw();
+                updateUI();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!image || !drawingBarrierMode || !barrierStartPoint) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Redraw everything and add temporary line
+            draw();
+            ctx.strokeStyle = 'rgba(192, 57, 43, 0.5)';
+            ctx.lineWidth = 5;
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath();
+            ctx.moveTo(barrierStartPoint.x, barrierStartPoint.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        });
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (!image) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Check if clicking on current position
+            if (currentPosition && distance({ x, y }, currentPosition) < 20) {
+                currentPosition = null;
+                path = [];
+                draw();
+                updateUI();
+                return;
+            }
+
+            // Check if clicking on end position
+            if (endPosition && distance({ x, y }, endPosition) < 20) {
+                endPosition = null;
+                path = [];
+                draw();
+                updateUI();
+                return;
+            }
+
+            // Check if clicking on a barrier
+            for (let i = barriers.length - 1; i >= 0; i--) {
+                if (isPointNearBarrier({ x, y }, barriers[i], 15)) {
+                    barriers.splice(i, 1);
+                    path = [];
+                    draw();
+                    updateUI();
+                    return;
+                }
+            }
+
+            // Find and remove closest node within 20px
+            if (nodes.length > 0) {
+                let closestIndex = -1;
+                let minDist = 20;
+
+                nodes.forEach((node, index) => {
+                    const dist = distance({ x, y }, node);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestIndex = index;
+                    }
+                });
+
+                if (closestIndex !== -1) {
+                    nodes.splice(closestIndex, 1);
+                    path = [];
+                    draw();
+                    updateUI();
+                }
+            }
+        });
+
+        setStartBtn.addEventListener('click', () => {
+            settingStartMode = !settingStartMode;
+            if (settingStartMode) {
+                settingEndMode = false;
+                drawingBarrierMode = false;
+                collectingNodeMode = false;
+                barrierStartPoint = null;
+                setEndBtn.classList.remove('active');
+                setEndBtn.textContent = '🏁 Set End Position';
+                drawBarrierBtn.classList.remove('active');
+                drawBarrierBtn.textContent = '🚧 Draw Barrier';
+                collectNodeBtn.classList.remove('active');
+                collectNodeBtn.textContent = '✅ Collect Node';
+                setStartBtn.classList.add('active');
+                setStartBtn.textContent = '📍 Click on Map to Set Position';
+            } else {
+                setStartBtn.classList.remove('active');
+                setStartBtn.textContent = '📍 Set Current Position';
+            }
+        });
+
+        setEndBtn.addEventListener('click', () => {
+            settingEndMode = !settingEndMode;
+            if (settingEndMode) {
+                settingStartMode = false;
+                drawingBarrierMode = false;
+                collectingNodeMode = false;
+                barrierStartPoint = null;
+                setStartBtn.classList.remove('active');
+                setStartBtn.textContent = '📍 Set Current Position';
+                drawBarrierBtn.classList.remove('active');
+                drawBarrierBtn.textContent = '🚧 Draw Barrier';
+                collectNodeBtn.classList.remove('active');
+                collectNodeBtn.textContent = '✅ Collect Node';
+                setEndBtn.classList.add('active');
+                setEndBtn.textContent = '🏁 Click on Map to Set Position';
+            } else {
+                setEndBtn.classList.remove('active');
+                setEndBtn.textContent = '🏁 Set End Position';
+            }
+        });
+
+        drawBarrierBtn.addEventListener('click', () => {
+            drawingBarrierMode = !drawingBarrierMode;
+            if (drawingBarrierMode) {
+                settingStartMode = false;
+                settingEndMode = false;
+                collectingNodeMode = false;
+                barrierStartPoint = null;
+                setStartBtn.classList.remove('active');
+                setStartBtn.textContent = '📍 Set Current Position';
+                setEndBtn.classList.remove('active');
+                setEndBtn.textContent = '🏁 Set End Position';
+                collectNodeBtn.classList.remove('active');
+                collectNodeBtn.textContent = '✅ Collect Node';
+                drawBarrierBtn.classList.add('active');
+                drawBarrierBtn.textContent = '🚧 Click Start Point';
+            } else {
+                barrierStartPoint = null;
+                drawBarrierBtn.classList.remove('active');
+                drawBarrierBtn.textContent = '🚧 Draw Barrier';
+                draw(); // Redraw to remove temporary line
+            }
+        });
+
+        collectNodeBtn.addEventListener('click', () => {
+            collectingNodeMode = !collectingNodeMode;
+            if (collectingNodeMode) {
+                settingStartMode = false;
+                settingEndMode = false;
+                drawingBarrierMode = false;
+                barrierStartPoint = null;
+                setStartBtn.classList.remove('active');
+                setStartBtn.textContent = '📍 Set Current Position';
+                setEndBtn.classList.remove('active');
+                setEndBtn.textContent = '🏁 Set End Position';
+                drawBarrierBtn.classList.remove('active');
+                drawBarrierBtn.textContent = '🚧 Draw Barrier';
+                collectNodeBtn.classList.add('active');
+                collectNodeBtn.textContent = '✅ Click Node to Collect';
+            } else {
+                collectNodeBtn.classList.remove('active');
+                collectNodeBtn.textContent = '✅ Collect Node';
+            }
+        });
+
+        calculateBtn.addEventListener('click', () => {
+            if (nodes.length === 0) return;
+            if (!currentPosition && nodes.length < 2) return;
+
+            path = nearestNeighborPath(nodes, currentPosition, endPosition);
+
+            let totalDistance = 0;
+            for (let i = 0; i < path.length - 1; i++) {
+                totalDistance += distance(path[i], path[i + 1]);
+            }
+
+            draw();
+            updateUI();
+
+            document.getElementById('pathLength').textContent = Math.round(totalDistance) + ' px';
+
+            const pathInfo = document.getElementById('pathInfo');
+            pathInfo.style.display = 'block';
+
+            // Count how many nodes in path are actual mining nodes
+            const miningNodesInPath = path.filter(p => nodes.includes(p)).length;
+            const allNodesVisited = miningNodesInPath === nodes.length;
+            const waypointCount = path.filter(p => p.isWaypoint).length;
+
+            // Build route text - show key points, indicate waypoints with "..."
+            const routeParts = [];
+            let lastWasWaypoint = false;
+
+            path.forEach((node, i) => {
+                if (currentPosition && node === currentPosition) {
+                    routeParts.push(`Start (Zone ${node.zone})`);
+                    lastWasWaypoint = false;
+                } else if (endPosition && node === endPosition) {
+                    routeParts.push(`End (Zone ${node.zone})`);
+                    lastWasWaypoint = false;
+                } else {
+                    const nodeIndex = nodes.indexOf(node);
+                    if (nodeIndex !== -1) {
+                        // Mining node
+                        routeParts.push(`Zone ${node.zone} (#${nodeIndex + 1})`);
+                        lastWasWaypoint = false;
+                    } else if (node.isWaypoint) {
+                        // Waypoint - group consecutive waypoints
+                        if (!lastWasWaypoint) {
+                            routeParts.push('...');
+                        }
+                        lastWasWaypoint = true;
+                    }
+                }
+            });
+
+            const routeText = routeParts.join(' → ');
+
+            // Check for barrier intersections
+            const intersections = checkPathBarrierIntersections(path);
+
+            if (!allNodesVisited) {
+                pathInfo.className = 'warning-info';
+                pathInfo.innerHTML = `
+                    <h4>⚠️ Some Nodes Unreachable</h4>
+                    <p><strong>Route Order:</strong> ${routeText}</p>
+                    <p style="margin-top: 10px;"><strong>${nodes.length - miningNodesInPath}</strong> node${nodes.length - miningNodesInPath > 1 ? 's are' : ' is'} completely blocked by barriers and cannot be reached. Consider repositioning or removing barriers.</p>
+                `;
+            } else if (intersections.length > 0) {
+                pathInfo.className = 'warning-info';
+                pathInfo.innerHTML = `
+                    <h4>⚠️ Path Crosses Barriers</h4>
+                    <p><strong>Route Order:</strong> ${routeText}</p>
+                    <p style="margin-top: 10px;"><strong>${intersections.length}</strong> segment${intersections.length > 1 ? 's' : ''} unavoidably cross${intersections.length === 1 ? 'es' : ''} barriers. No clear path exists with current barrier configuration.</p>
+                `;
+            } else {
+                pathInfo.className = 'path-info';
+                let detailText = `All ${nodes.length} mining node${nodes.length > 1 ? 's' : ''} visited! 🎯`;
+                if (waypointCount > 0) {
+                    detailText = `Path routes around barriers using ${waypointCount} waypoint${waypointCount > 1 ? 's' : ''}. ${detailText}`;
+                }
+                pathInfo.innerHTML = `
+                    <h4>✅ Optimal Path Found!</h4>
+                    <p><strong>Route Order:</strong> ${routeText}</p>
+                    <p style="margin-top: 10px;">${detailText}</p>
+                `;
+            }
+        });
+
+        clearNodesBtn.addEventListener('click', () => {
+            nodes = [];
+            path = [];
+            draw();
+            updateUI();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            image = null;
+            currentPosition = null;
+            endPosition = null;
+            nodes = [];
+            barriers = [];
+            path = [];
+            settingStartMode = false;
+            settingEndMode = false;
+            drawingBarrierMode = false;
+            collectingNodeMode = false;
+            barrierStartPoint = null;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            fileInput.value = '';
+            setStartBtn.classList.remove('active');
+            setStartBtn.textContent = '📍 Set Current Position';
+            setEndBtn.classList.remove('active');
+            setEndBtn.textContent = '🏁 Set End Position';
+            drawBarrierBtn.classList.remove('active');
+            drawBarrierBtn.textContent = '🚧 Draw Barrier';
+            collectNodeBtn.classList.remove('active');
+            collectNodeBtn.textContent = '✅ Collect Node';
+            updateUI();
+            resetBtn.disabled = true;
+            setStartBtn.disabled = true;
+            setEndBtn.disabled = true;
+            drawBarrierBtn.disabled = true;
+            collectNodeBtn.disabled = true;
+            document.getElementById('pathInfo').style.display = 'none';
+        });
+
+        function updateUI() {
+            // Update start status
+            if (currentPosition) {
+                document.getElementById('startStatus').textContent = `Zone ${currentPosition.zone}`;
+                document.getElementById('startStatus').style.color = '#3498db';
+            } else {
+                document.getElementById('startStatus').textContent = 'Not Set';
+                document.getElementById('startStatus').style.color = '#999';
+            }
+
+            // Update end status
+            if (endPosition) {
+                document.getElementById('endStatus').textContent = `Zone ${endPosition.zone}`;
+                document.getElementById('endStatus').style.color = '#e67e22';
+            } else {
+                document.getElementById('endStatus').textContent = 'Not Set';
+                document.getElementById('endStatus').style.color = '#999';
+            }
+
+            // Update node count
+            document.getElementById('nodeCount').textContent = nodes.length;
+
+            // Update barrier count
+            document.getElementById('barrierCount').textContent = barriers.length;
+
+            // Update zones covered
+            const allPoints = [];
+            if (currentPosition) allPoints.push(currentPosition);
+            allPoints.push(...nodes);
+            if (endPosition) allPoints.push(endPosition);
+            const uniqueZones = new Set(allPoints.map(n => n.zone));
+            document.getElementById('zonesCovered').textContent = `${uniqueZones.size}/9`;
+
+            // Enable/disable buttons
+            const canCalculate = (currentPosition && nodes.length >= 1) || nodes.length >= 2;
+            calculateBtn.disabled = !canCalculate;
+            clearNodesBtn.disabled = nodes.length === 0;
+            if (image) {
+                setStartBtn.disabled = false;
+                setEndBtn.disabled = false;
+                drawBarrierBtn.disabled = false;
+                collectNodeBtn.disabled = nodes.length === 0;
+            }
+
+            // Update node list
+            const nodeList = document.getElementById('nodeList');
+            if (nodes.length === 0) {
+                nodeList.innerHTML = '<p style="color: #999; text-align: center;">No nodes marked yet</p>';
+            } else {
+                nodeList.innerHTML = nodes.map((node, i) =>
+                    `<div class="node-item">Node ${i + 1} - Zone ${node.zone} (${Math.round(node.x)}, ${Math.round(node.y)})</div>`
+                ).join('');
+            }
+
+            if (!canCalculate) {
+                document.getElementById('pathLength').textContent = '-';
+            }
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
