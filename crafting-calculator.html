@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crafting Materials Calculator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 24px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 1.8em; }
+        .header-actions { display: flex; gap: 10px; }
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 600px;
+        }
+        .panel {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: 85vh;
+        }
+        .panel-left { border-right: 1px solid #e0e0e0; }
+        .section { margin-bottom: 24px; }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .section-header h2 {
+            font-size: 1.2em;
+            color: #2c3e50;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        button:hover { transform: translateY(-1px); }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #229954; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #3498db;
+            color: #3498db;
+        }
+        .btn-outline:hover { background: #3498db; color: white; }
+        input, select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .material-item, .recipe-item {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        .material-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .recipe-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .recipe-header strong { color: #2c3e50; font-size: 1.05em; }
+        .recipe-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .recipe-inputs {
+            font-size: 13px;
+            color: #555;
+            padding-left: 12px;
+            border-left: 3px solid #3498db;
+        }
+        .recipe-inputs div { padding: 2px 0; }
+        .add-form {
+            background: #eef6fd;
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .add-form h4 { color: #2c3e50; margin-bottom: 12px; }
+        .form-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .form-row label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            min-width: 80px;
+        }
+        .form-row input, .form-row select { flex: 1; min-width: 0; }
+        .input-list-item {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .calc-section {
+            background: #f0f7ff;
+            border: 1px solid #b8d4f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .calc-section h3 { color: #2c3e50; margin-bottom: 12px; }
+        .calc-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .calc-row label { font-weight: 600; color: #555; }
+        .mode-toggle {
+            display: flex;
+            gap: 0;
+            margin-bottom: 12px;
+        }
+        .mode-toggle button {
+            border-radius: 0;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            flex: 1;
+        }
+        .mode-toggle button:first-child { border-radius: 6px 0 0 6px; }
+        .mode-toggle button:last-child { border-radius: 0 6px 6px 0; }
+        .mode-toggle button:hover { transform: none; }
+        .mode-toggle button.active {
+            background: #3498db;
+            color: white;
+        }
+        .results {
+            background: #f0faf0;
+            border: 1px solid #a8dda8;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .results h3 { color: #27ae60; margin-bottom: 16px; }
+        .results-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .summary-card {
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        .summary-card .label { font-size: 12px; color: #888; text-transform: uppercase; }
+        .summary-card .value { font-size: 1.5em; font-weight: 700; color: #2c3e50; }
+        .results table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .results th, .results td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .results th {
+            background: #e8f5e9;
+            font-size: 13px;
+            color: #555;
+            text-transform: uppercase;
+        }
+        .results td { font-size: 14px; }
+        .results .qty { font-weight: 700; color: #2c3e50; }
+        .tree-node {
+            padding: 4px 0 4px 20px;
+            border-left: 2px solid #ccc;
+            margin-left: 8px;
+            font-size: 14px;
+        }
+        .tree-node .node-label {
+            padding: 2px 0;
+        }
+        .tree-root { border-left: none; padding-left: 0; margin-left: 0; }
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-style: italic;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .tag-xp { background: #fff3cd; color: #856404; }
+        .tag-qty { background: #d4edda; color: #155724; }
+        .tag-mat { background: #e2e3e5; color: #383d41; }
+        .tag-bonus { background: #e8daef; color: #6c3483; }
+        .tag-skill { background: #d1ecf1; color: #0c5460; }
+        .skill-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .skill-xp-table th { background: #d1ecf1; }
+        .skill-xp-table td.skill-name { font-weight: 600; color: #0c5460; }
+        .recipe-bonuses {
+            font-size: 13px;
+            color: #6c3483;
+            padding-left: 12px;
+            border-left: 3px solid #9b59b6;
+            margin-top: 6px;
+        }
+        .recipe-bonuses div { padding: 2px 0; }
+        .bonus-table { margin-top: 4px; }
+        .bonus-table th { background: #f3e8ff; }
+        .bonus-table .chance { color: #8e44ad; font-weight: 600; }
+        .btn-edit { background: #f0ad4e; color: white; }
+        .btn-edit:hover { background: #ec971f; }
+        .item-actions { display: flex; gap: 4px; }
+        .inline-edit { display: flex; gap: 6px; align-items: center; flex: 1; }
+        .inline-edit input { flex: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Crafting Materials Calculator</h1>
+            <div class="header-actions">
+                <button class="btn-outline" onclick="importData()" style="border-color:white;color:white;">Import JSON</button>
+                <button class="btn-outline" onclick="exportData()" style="border-color:white;color:white;">Export JSON</button>
+                <input type="file" id="importFile" accept=".json" style="display:none">
+            </div>
+        </div>
+        <div class="content">
+            <div class="panel panel-left">
+                <!-- Materials -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Base Materials</h2>
+                        <button class="btn-primary btn-sm" onclick="toggleAddMaterial()">+ Add</button>
+                    </div>
+                    <div id="materialList"></div>
+                    <div id="addMaterialForm" class="add-form" style="display:none;">
+                        <div class="form-row">
+                            <input type="text" id="newMaterialName" placeholder="Material name (e.g. Iron Ore)" style="flex:1" onkeydown="if(event.key==='Enter')addMaterial()">
+                            <button class="btn-success btn-sm" onclick="addMaterial()">Add</button>
+                            <button class="btn-sm" onclick="toggleAddMaterial()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Skills</h2>
+                        <button class="btn-primary btn-sm" onclick="toggleAddSkill()">+ Add</button>
+                    </div>
+                    <div id="skillList"></div>
+                    <div id="addSkillForm" class="add-form" style="display:none;">
+                        <div class="form-row">
+                            <input type="text" id="newSkillName" placeholder="Skill name (e.g. Smithing)" style="flex:1" onkeydown="if(event.key==='Enter')addSkill()">
+                            <button class="btn-success btn-sm" onclick="addSkill()">Add</button>
+                            <button class="btn-sm" onclick="toggleAddSkill()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recipes -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Recipes</h2>
+                        <button class="btn-primary btn-sm" onclick="toggleAddRecipe()">+ Add</button>
+                    </div>
+                    <div id="recipeList"></div>
+                    <div id="addRecipeForm" class="add-form" style="display:none;">
+                        <h4 id="recipeFormTitle">New Recipe</h4>
+                        <div class="form-row">
+                            <label>Output Name</label>
+                            <input type="text" id="newRecipeName" placeholder="e.g. Iron Bar">
+                        </div>
+                        <div class="form-row">
+                            <label>Output Qty</label>
+                            <input type="number" id="newRecipeOutputQty" value="1" min="1" style="width:80px;flex:none">
+                            <label style="min-width:auto;">XP / Craft</label>
+                            <input type="number" id="newRecipeXP" value="0" min="0" style="width:100px;flex:none">
+                        </div>
+                        <div class="form-row">
+                            <label>Skill</label>
+                            <select id="newRecipeSkill" style="flex:1"></select>
+                        </div>
+                        <div style="margin:12px 0 8px;font-weight:600;color:#555;font-size:13px;">Inputs:</div>
+                        <div id="newRecipeInputs"></div>
+                        <div class="form-row">
+                            <button class="btn-sm btn-outline" onclick="addRecipeInputRow()">+ Add Input</button>
+                        </div>
+                        <div style="margin:12px 0 8px;font-weight:600;color:#6c3483;font-size:13px;">Bonus Outputs (optional):</div>
+                        <div id="newRecipeBonuses"></div>
+                        <div class="form-row">
+                            <button class="btn-sm" style="background:#9b59b6;color:white;" onclick="addRecipeBonusRow()">+ Add Bonus Output</button>
+                        </div>
+                        <div class="form-row" style="margin-top:12px;">
+                            <button class="btn-success" id="recipeFormSaveBtn" onclick="saveRecipe()">Save Recipe</button>
+                            <button onclick="cancelRecipeForm()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <!-- Calculator -->
+                <div class="calc-section">
+                    <h3>Calculate Requirements</h3>
+                    <div class="calc-row">
+                        <label>Target Recipe:</label>
+                        <select id="targetRecipe" style="flex:1" onchange="calculate()">
+                            <option value="">-- Select a recipe --</option>
+                        </select>
+                    </div>
+                    <div class="mode-toggle">
+                        <button class="active" onclick="setMode('count')">By Craft Count</button>
+                        <button onclick="setMode('xp')">By XP Target</button>
+                    </div>
+                    <div id="countInput" class="calc-row">
+                        <label>Craft Count:</label>
+                        <input type="number" id="craftCount" value="1" min="1" style="width:120px;flex:none" oninput="calculate()">
+                    </div>
+                    <div id="xpInput" style="display:none;">
+                        <div class="calc-row">
+                            <label>Skill:</label>
+                            <select id="targetSkill" style="flex:1" onchange="calculate()"></select>
+                        </div>
+                        <div class="calc-row">
+                            <label>Target XP:</label>
+                            <input type="number" id="targetXP" value="1000" min="1" style="width:140px;flex:none" oninput="calculate()">
+                        </div>
+                    </div>
+                    <button class="btn-success" onclick="calculate()" style="width:100%;">Calculate</button>
+                </div>
+
+                <div id="results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let materials = [];
+        let skills = [];
+        let recipes = [];
+        let nextId = 1;
+        let calcMode = 'count';
+        let editingRecipeId = null;
+
+        // --- Persistence ---
+        function save() {
+            localStorage.setItem('crafting-calc', JSON.stringify({ materials, skills, recipes, nextId }));
+        }
+
+        function load() {
+            const data = localStorage.getItem('crafting-calc');
+            if (data) {
+                const parsed = JSON.parse(data);
+                materials = parsed.materials || [];
+                skills = parsed.skills || [];
+                recipes = parsed.recipes || [];
+                nextId = parsed.nextId || 1;
+            }
+        }
+
+        function exportData() {
+            const data = JSON.stringify({ materials, skills, recipes, nextId }, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'crafting-recipes.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            document.getElementById('importFile').click();
+        }
+
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const parsed = JSON.parse(ev.target.result);
+                    materials = parsed.materials || [];
+                    skills = parsed.skills || [];
+                    recipes = parsed.recipes || [];
+                    nextId = parsed.nextId || 1;
+                    save();
+                    renderAll();
+                } catch (err) {
+                    alert('Invalid JSON file');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+
+        // --- Materials ---
+        function toggleAddMaterial() {
+            const form = document.getElementById('addMaterialForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            if (form.style.display === 'block') document.getElementById('newMaterialName').focus();
+        }
+
+        function addMaterial() {
+            const name = document.getElementById('newMaterialName').value.trim();
+            if (!name) return;
+            if (materials.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+                alert('Material already exists');
+                return;
+            }
+            materials.push({ id: nextId++, name });
+            document.getElementById('newMaterialName').value = '';
+            save();
+            renderAll();
+        }
+
+        function removeMaterial(id) {
+            // Check if used in any recipe
+            const usedIn = recipes.filter(r => r.inputs.some(inp => inp.type === 'material' && inp.id === id));
+            if (usedIn.length > 0) {
+                alert(`Cannot remove: used in ${usedIn.map(r => r.name).join(', ')}`);
+                return;
+            }
+            materials = materials.filter(m => m.id !== id);
+            save();
+            renderAll();
+        }
+
+        function renderMaterials() {
+            const el = document.getElementById('materialList');
+            if (materials.length === 0) {
+                el.innerHTML = '<div class="empty-state">No materials defined yet</div>';
+                return;
+            }
+            el.innerHTML = materials.map(m => `
+                <div class="material-item" id="mat-${m.id}">
+                    <span><span class="tag tag-mat">MAT</span> ${esc(m.name)}</span>
+                    <div class="item-actions">
+                        <button class="btn-edit btn-sm" onclick="editMaterial(${m.id})">Edit</button>
+                        <button class="btn-danger btn-sm" onclick="removeMaterial(${m.id})">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editMaterial(id) {
+            const m = materials.find(m => m.id === id);
+            if (!m) return;
+            const el = document.getElementById('mat-' + id);
+            el.innerHTML = `
+                <div class="inline-edit">
+                    <span class="tag tag-mat">MAT</span>
+                    <input type="text" value="${esc(m.name)}" id="editMat-${id}" onkeydown="if(event.key==='Enter')saveMaterial(${id});if(event.key==='Escape')renderAll();">
+                    <button class="btn-success btn-sm" onclick="saveMaterial(${id})">Save</button>
+                    <button class="btn-sm" onclick="renderAll()">Cancel</button>
+                </div>
+            `;
+            document.getElementById('editMat-' + id).focus();
+        }
+
+        function saveMaterial(id) {
+            const input = document.getElementById('editMat-' + id);
+            const name = input.value.trim();
+            if (!name) return;
+            if (materials.some(m => m.id !== id && m.name.toLowerCase() === name.toLowerCase())) {
+                alert('Material name already exists');
+                return;
+            }
+            const m = materials.find(m => m.id === id);
+            if (m) m.name = name;
+            save();
+            renderAll();
+        }
+
+        // --- Skills ---
+        function toggleAddSkill() {
+            const form = document.getElementById('addSkillForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            if (form.style.display === 'block') document.getElementById('newSkillName').focus();
+        }
+
+        function addSkill() {
+            const name = document.getElementById('newSkillName').value.trim();
+            if (!name) return;
+            if (skills.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+                alert('Skill already exists');
+                return;
+            }
+            skills.push({ id: nextId++, name });
+            document.getElementById('newSkillName').value = '';
+            save();
+            renderAll();
+        }
+
+        function removeSkill(id) {
+            const usedIn = recipes.filter(r => r.skillId === id);
+            if (usedIn.length > 0) {
+                alert(`Cannot remove: assigned to ${usedIn.map(r => r.name).join(', ')}`);
+                return;
+            }
+            skills = skills.filter(s => s.id !== id);
+            save();
+            renderAll();
+        }
+
+        function renderSkills() {
+            const el = document.getElementById('skillList');
+            if (skills.length === 0) {
+                el.innerHTML = '<div class="empty-state">No skills defined yet</div>';
+                return;
+            }
+            el.innerHTML = skills.map(s => `
+                <div class="material-item skill-item" id="skill-${s.id}">
+                    <span><span class="tag tag-skill">SKILL</span> ${esc(s.name)}</span>
+                    <div class="item-actions">
+                        <button class="btn-edit btn-sm" onclick="editSkill(${s.id})">Edit</button>
+                        <button class="btn-danger btn-sm" onclick="removeSkill(${s.id})">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editSkill(id) {
+            const s = skills.find(s => s.id === id);
+            if (!s) return;
+            const el = document.getElementById('skill-' + id);
+            el.innerHTML = `
+                <div class="inline-edit">
+                    <span class="tag tag-skill">SKILL</span>
+                    <input type="text" value="${esc(s.name)}" id="editSkill-${id}" onkeydown="if(event.key==='Enter')saveSkill(${id});if(event.key==='Escape')renderAll();">
+                    <button class="btn-success btn-sm" onclick="saveSkill(${id})">Save</button>
+                    <button class="btn-sm" onclick="renderAll()">Cancel</button>
+                </div>
+            `;
+            document.getElementById('editSkill-' + id).focus();
+        }
+
+        function saveSkill(id) {
+            const input = document.getElementById('editSkill-' + id);
+            const name = input.value.trim();
+            if (!name) return;
+            if (skills.some(s => s.id !== id && s.name.toLowerCase() === name.toLowerCase())) {
+                alert('Skill name already exists');
+                return;
+            }
+            const s = skills.find(s => s.id === id);
+            if (s) s.name = name;
+            save();
+            renderAll();
+        }
+
+        function getSkillName(id) {
+            const s = skills.find(s => s.id === id);
+            return s ? s.name : null;
+        }
+
+        function getSkillOptions(selectedId) {
+            let html = '<option value="">-- None --</option>';
+            skills.forEach(s => {
+                html += `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${esc(s.name)}</option>`;
+            });
+            return html;
+        }
+
+        // --- Recipes ---
+        function toggleAddRecipe() {
+            editingRecipeId = null;
+            const form = document.getElementById('addRecipeForm');
+            const showing = form.style.display === 'none';
+            form.style.display = showing ? 'block' : 'none';
+            if (showing) {
+                document.getElementById('recipeFormTitle').textContent = 'New Recipe';
+                document.getElementById('recipeFormSaveBtn').textContent = 'Save Recipe';
+                document.getElementById('newRecipeName').value = '';
+                document.getElementById('newRecipeOutputQty').value = '1';
+                document.getElementById('newRecipeXP').value = '0';
+                document.getElementById('newRecipeInputs').innerHTML = '';
+                document.getElementById('newRecipeBonuses').innerHTML = '';
+                document.getElementById('newRecipeSkill').innerHTML = getSkillOptions();
+                addRecipeInputRow();
+                document.getElementById('newRecipeName').focus();
+            }
+        }
+
+        function cancelRecipeForm() {
+            editingRecipeId = null;
+            document.getElementById('addRecipeForm').style.display = 'none';
+        }
+
+        function editRecipe(id) {
+            const r = recipes.find(r => r.id === id);
+            if (!r) return;
+            editingRecipeId = id;
+
+            const form = document.getElementById('addRecipeForm');
+            form.style.display = 'block';
+            document.getElementById('recipeFormTitle').textContent = 'Edit Recipe';
+            document.getElementById('recipeFormSaveBtn').textContent = 'Update Recipe';
+            document.getElementById('newRecipeName').value = r.name;
+            document.getElementById('newRecipeOutputQty').value = r.outputQty;
+            document.getElementById('newRecipeXP').value = r.xpPerCraft;
+            document.getElementById('newRecipeSkill').innerHTML = getSkillOptions(r.skillId);
+
+            // Populate inputs
+            document.getElementById('newRecipeInputs').innerHTML = '';
+            for (const inp of r.inputs) {
+                addRecipeInputRow();
+                const rows = document.querySelectorAll('#newRecipeInputs .input-list-item');
+                const lastRow = rows[rows.length - 1];
+                lastRow.querySelector('.ri-source').value = `${inp.type}:${inp.id}`;
+                lastRow.querySelector('.ri-qty').value = inp.qty;
+            }
+
+            // Populate bonus outputs
+            document.getElementById('newRecipeBonuses').innerHTML = '';
+            if (r.bonusOutputs) {
+                for (const b of r.bonusOutputs) {
+                    addRecipeBonusRow();
+                    const rows = document.querySelectorAll('#newRecipeBonuses .input-list-item');
+                    const lastRow = rows[rows.length - 1];
+                    // Try to match to a material
+                    const matchMat = materials.find(m => m.name === b.name);
+                    if (matchMat) {
+                        lastRow.querySelector('.rb-source').value = `mat:${matchMat.id}`;
+                    } else {
+                        lastRow.querySelector('.rb-source').value = 'custom';
+                        const custom = lastRow.querySelector('.rb-custom');
+                        custom.style.display = 'block';
+                        custom.value = b.name;
+                    }
+                    lastRow.querySelector('.rb-chance').value = b.chance;
+                    lastRow.querySelector('.rb-qty').value = b.qty;
+                }
+            }
+
+            document.getElementById('newRecipeName').focus();
+            // Scroll form into view
+            form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function addRecipeInputRow() {
+            const container = document.getElementById('newRecipeInputs');
+            const div = document.createElement('div');
+            div.className = 'input-list-item';
+            div.innerHTML = `
+                <select class="ri-source" style="flex:2">${getSourceOptions()}</select>
+                <input type="number" class="ri-qty" value="1" min="1" style="width:70px;flex:none" placeholder="Qty">
+                <button class="btn-danger btn-sm" onclick="this.parentElement.remove()">X</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function addRecipeBonusRow() {
+            const container = document.getElementById('newRecipeBonuses');
+            const div = document.createElement('div');
+            div.className = 'input-list-item';
+            let matOpts = '<option value="">-- select --</option>';
+            if (materials.length > 0) {
+                matOpts += '<optgroup label="Base Materials">';
+                materials.forEach(m => { matOpts += `<option value="mat:${m.id}">${esc(m.name)}</option>`; });
+                matOpts += '</optgroup>';
+            }
+            matOpts += '<option value="custom">Custom...</option>';
+            div.innerHTML = `
+                <select class="rb-source" style="flex:2" onchange="toggleBonusCustom(this)">${matOpts}</select>
+                <input type="text" class="rb-custom" placeholder="Custom item name" style="flex:2;display:none">
+                <input type="number" class="rb-chance" value="10" min="0.1" max="100" step="0.1" style="width:70px;flex:none" placeholder="%">
+                <span style="font-size:12px;color:#888;">%</span>
+                <input type="number" class="rb-qty" value="1" min="1" style="width:60px;flex:none" placeholder="Qty">
+                <button class="btn-danger btn-sm" onclick="this.parentElement.remove()">X</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function toggleBonusCustom(sel) {
+            const custom = sel.parentElement.querySelector('.rb-custom');
+            custom.style.display = sel.value === 'custom' ? 'block' : 'none';
+            if (sel.value === 'custom') custom.focus();
+        }
+
+        function getSourceOptions() {
+            let html = '<option value="">-- select --</option>';
+            if (materials.length > 0) {
+                html += '<optgroup label="Materials">';
+                materials.forEach(m => { html += `<option value="material:${m.id}">${esc(m.name)}</option>`; });
+                html += '</optgroup>';
+            }
+            if (recipes.length > 0) {
+                html += '<optgroup label="Recipe Outputs">';
+                recipes.forEach(r => { html += `<option value="recipe:${r.id}">${esc(r.name)}</option>`; });
+                html += '</optgroup>';
+            }
+            return html;
+        }
+
+        function saveRecipe() {
+            const name = document.getElementById('newRecipeName').value.trim();
+            const outputQty = parseInt(document.getElementById('newRecipeOutputQty').value) || 1;
+            const xpPerCraft = parseFloat(document.getElementById('newRecipeXP').value) || 0;
+            if (!name) { alert('Enter a recipe name'); return; }
+
+            const inputRows = document.querySelectorAll('#newRecipeInputs .input-list-item');
+            const inputs = [];
+            for (const row of inputRows) {
+                const source = row.querySelector('.ri-source').value;
+                const qty = parseInt(row.querySelector('.ri-qty').value) || 1;
+                if (!source) continue;
+                const [type, id] = source.split(':');
+                inputs.push({ type, id: parseInt(id), qty });
+            }
+            if (inputs.length === 0) { alert('Add at least one input'); return; }
+
+            const bonusRows = document.querySelectorAll('#newRecipeBonuses .input-list-item');
+            const bonusOutputs = [];
+            for (const row of bonusRows) {
+                const source = row.querySelector('.rb-source').value;
+                let bName = '';
+                if (source === 'custom') {
+                    bName = row.querySelector('.rb-custom').value.trim();
+                } else if (source.startsWith('mat:')) {
+                    const matId = parseInt(source.split(':')[1]);
+                    bName = getItemName('material', matId);
+                }
+                const chance = parseFloat(row.querySelector('.rb-chance').value) || 0;
+                const qty = parseInt(row.querySelector('.rb-qty').value) || 1;
+                if (bName && chance > 0) {
+                    bonusOutputs.push({ name: bName, chance: Math.min(chance, 100), qty });
+                }
+            }
+
+            const skillId = parseInt(document.getElementById('newRecipeSkill').value) || null;
+
+            if (editingRecipeId) {
+                // Update existing recipe
+                const existing = recipes.find(r => r.id === editingRecipeId);
+                if (!existing) return;
+                const updated = { ...existing, name, outputQty, xpPerCraft, inputs, bonusOutputs, skillId };
+                // Cycle detection with updated recipe
+                const tempRecipes = recipes.map(r => r.id === editingRecipeId ? updated : r);
+                if (hasCycle(updated, tempRecipes)) {
+                    alert('This change would create a circular dependency');
+                    return;
+                }
+                Object.assign(existing, { name, outputQty, xpPerCraft, inputs, bonusOutputs, skillId });
+            } else {
+                // Add new recipe
+                const recipe = { id: nextId++, name, outputQty, xpPerCraft, inputs, bonusOutputs, skillId };
+                if (hasCycle(recipe, recipes.concat(recipe))) {
+                    alert('This recipe would create a circular dependency');
+                    return;
+                }
+                recipes.push(recipe);
+            }
+
+            editingRecipeId = null;
+            document.getElementById('addRecipeForm').style.display = 'none';
+            save();
+            renderAll();
+        }
+
+        function hasCycle(recipe, allRecipes, visited = new Set()) {
+            if (visited.has(recipe.id)) return true;
+            visited.add(recipe.id);
+            for (const inp of recipe.inputs) {
+                if (inp.type === 'recipe') {
+                    const dep = allRecipes.find(r => r.id === inp.id);
+                    if (dep && hasCycle(dep, allRecipes, new Set(visited))) return true;
+                }
+            }
+            return false;
+        }
+
+        function removeRecipe(id) {
+            // Check if output is used in other recipes
+            const usedIn = recipes.filter(r => r.id !== id && r.inputs.some(inp => inp.type === 'recipe' && inp.id === id));
+            if (usedIn.length > 0) {
+                alert(`Cannot remove: output used in ${usedIn.map(r => r.name).join(', ')}`);
+                return;
+            }
+            recipes = recipes.filter(r => r.id !== id);
+            save();
+            renderAll();
+        }
+
+        function getItemName(type, id) {
+            if (type === 'material') {
+                const m = materials.find(m => m.id === id);
+                return m ? m.name : '(unknown)';
+            }
+            const r = recipes.find(r => r.id === id);
+            return r ? r.name : '(unknown)';
+        }
+
+        function renderRecipes() {
+            const el = document.getElementById('recipeList');
+            if (recipes.length === 0) {
+                el.innerHTML = '<div class="empty-state">No recipes defined yet</div>';
+                return;
+            }
+            el.innerHTML = recipes.map(r => `
+                <div class="recipe-item">
+                    <div class="recipe-header">
+                        <strong>${esc(r.name)}</strong>
+                        <div class="item-actions">
+                            <button class="btn-edit btn-sm" onclick="editRecipe(${r.id})">Edit</button>
+                            <button class="btn-danger btn-sm" onclick="removeRecipe(${r.id})">Remove</button>
+                        </div>
+                    </div>
+                    <div class="recipe-meta">
+                        <span><span class="tag tag-qty">Makes ${r.outputQty}</span></span>
+                        <span><span class="tag tag-xp">${r.xpPerCraft} XP</span></span>
+                        ${r.skillId ? `<span><span class="tag tag-skill">${esc(getSkillName(r.skillId) || 'Unknown')}</span></span>` : ''}
+                    </div>
+                    <div class="recipe-inputs">
+                        ${r.inputs.map(inp => `<div>${inp.qty}x ${esc(getItemName(inp.type, inp.id))}</div>`).join('')}
+                    </div>
+                    ${(r.bonusOutputs && r.bonusOutputs.length > 0) ? `
+                        <div class="recipe-bonuses">
+                            ${r.bonusOutputs.map(b => `<div><span class="tag tag-bonus">${b.chance}%</span> ${b.qty}x ${esc(b.name)}</div>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // --- Calculator ---
+        function setMode(mode) {
+            calcMode = mode;
+            document.querySelectorAll('.mode-toggle button').forEach((btn, i) => {
+                btn.classList.toggle('active', (i === 0 && mode === 'count') || (i === 1 && mode === 'xp'));
+            });
+            document.getElementById('countInput').style.display = mode === 'count' ? 'flex' : 'none';
+            document.getElementById('xpInput').style.display = mode === 'xp' ? 'flex' : 'none';
+            calculate();
+        }
+
+        // Calculate total XP for a specific skill generated by 1 craft of topRecipe (including sub-recipes)
+        function getSkillXPPerCraft(topRecipeId, skillId) {
+            let totalSkillXP = 0;
+            function walk(recipeId, craftsPerTopCraft) {
+                const r = recipes.find(r => r.id === recipeId);
+                if (!r) return;
+                if (r.skillId === skillId) {
+                    totalSkillXP += craftsPerTopCraft * r.xpPerCraft;
+                }
+                for (const inp of r.inputs) {
+                    if (inp.type === 'recipe') {
+                        const dep = recipes.find(dr => dr.id === inp.id);
+                        if (dep) {
+                            const depCraftsPerTopCraft = Math.ceil(inp.qty * craftsPerTopCraft / dep.outputQty);
+                            walk(inp.id, depCraftsPerTopCraft);
+                        }
+                    }
+                }
+            }
+            walk(topRecipeId, 1);
+            return totalSkillXP;
+        }
+
+        function calculate() {
+            const resultsEl = document.getElementById('results');
+            const recipeId = parseInt(document.getElementById('targetRecipe').value);
+            if (!recipeId) { resultsEl.innerHTML = ''; return; }
+
+            const recipe = recipes.find(r => r.id === recipeId);
+            if (!recipe) { resultsEl.innerHTML = ''; return; }
+
+            let craftCount;
+            if (calcMode === 'count') {
+                craftCount = parseInt(document.getElementById('craftCount').value) || 1;
+            } else {
+                const targetXP = parseInt(document.getElementById('targetXP').value) || 0;
+                const targetSkillId = parseInt(document.getElementById('targetSkill').value) || null;
+
+                if (targetSkillId) {
+                    // Calculate XP per craft of the target recipe that goes to this skill
+                    // We need to figure out how much XP in the target skill is generated per 1 craft of the top-level recipe
+                    const xpPerCraftForSkill = getSkillXPPerCraft(recipeId, targetSkillId);
+                    if (xpPerCraftForSkill <= 0) {
+                        resultsEl.innerHTML = `<div class="results"><h3>Error</h3><p>No XP for "${esc(getSkillName(targetSkillId))}" is generated by this recipe chain. Use craft count mode or pick a different skill.</p></div>`;
+                        return;
+                    }
+                    craftCount = Math.ceil(targetXP / xpPerCraftForSkill);
+                } else {
+                    if (recipe.xpPerCraft <= 0) {
+                        resultsEl.innerHTML = '<div class="results"><h3>Error</h3><p>Recipe has 0 XP per craft. Use craft count mode instead.</p></div>';
+                        return;
+                    }
+                    craftCount = Math.ceil(targetXP / recipe.xpPerCraft);
+                }
+            }
+
+            const totalXP = craftCount * recipe.xpPerCraft;
+
+            // Resolve full dependency tree
+            const baseMaterials = {};
+            const intermediates = {};
+
+            function resolve(recipeId, totalOutputNeeded) {
+                const r = recipes.find(r => r.id === recipeId);
+                if (!r) return;
+
+                const craftsNeeded = Math.ceil(totalOutputNeeded / r.outputQty);
+
+                if (!intermediates[r.name]) intermediates[r.name] = { crafts: 0, xp: 0, recipe: r };
+                intermediates[r.name].crafts += craftsNeeded;
+                intermediates[r.name].xp += craftsNeeded * r.xpPerCraft;
+
+                for (const inp of r.inputs) {
+                    const qtyNeeded = inp.qty * craftsNeeded;
+                    if (inp.type === 'material') {
+                        const name = getItemName('material', inp.id);
+                        baseMaterials[name] = (baseMaterials[name] || 0) + qtyNeeded;
+                    } else {
+                        resolve(inp.id, qtyNeeded);
+                    }
+                }
+            }
+
+            resolve(recipeId, craftCount * recipe.outputQty);
+            // The top-level recipe crafts should be exactly craftCount
+            if (intermediates[recipe.name]) {
+                intermediates[recipe.name].crafts = craftCount;
+                intermediates[recipe.name].xp = craftCount * recipe.xpPerCraft;
+            }
+
+            // Recalculate properly: top-level is craftCount crafts, not based on output
+            // Clear and redo
+            for (const key in baseMaterials) delete baseMaterials[key];
+            for (const key in intermediates) delete intermediates[key];
+
+            const bonusYields = {};
+
+            function resolveFromCrafts(recipeId, craftsNeeded) {
+                const r = recipes.find(r => r.id === recipeId);
+                if (!r) return;
+
+                if (!intermediates[r.name]) intermediates[r.name] = { crafts: 0, xp: 0, recipe: r };
+                intermediates[r.name].crafts += craftsNeeded;
+                intermediates[r.name].xp += craftsNeeded * r.xpPerCraft;
+
+                // Accumulate bonus output estimates
+                if (r.bonusOutputs) {
+                    for (const b of r.bonusOutputs) {
+                        const expected = craftsNeeded * (b.chance / 100) * b.qty;
+                        if (!bonusYields[b.name]) bonusYields[b.name] = { expected: 0, sources: [] };
+                        bonusYields[b.name].expected += expected;
+                        bonusYields[b.name].sources.push({ recipe: r.name, crafts: craftsNeeded, chance: b.chance, qtyPer: b.qty });
+                    }
+                }
+
+                for (const inp of r.inputs) {
+                    const qtyNeeded = inp.qty * craftsNeeded;
+                    if (inp.type === 'material') {
+                        const name = getItemName('material', inp.id);
+                        baseMaterials[name] = (baseMaterials[name] || 0) + qtyNeeded;
+                    } else {
+                        const depRecipe = recipes.find(dr => dr.id === inp.id);
+                        if (depRecipe) {
+                            const depCrafts = Math.ceil(qtyNeeded / depRecipe.outputQty);
+                            resolveFromCrafts(inp.id, depCrafts);
+                        }
+                    }
+                }
+            }
+
+            resolveFromCrafts(recipeId, craftCount);
+
+            // Build tree view
+            function buildTree(recipeId, craftsNeeded, depth) {
+                const r = recipes.find(r => r.id === recipeId);
+                if (!r) return '';
+                let html = `<div class="tree-node ${depth === 0 ? 'tree-root' : ''}">`;
+                const skillTag = r.skillId ? ` <span class="tag tag-skill">${esc(getSkillName(r.skillId) || '?')}</span>` : '';
+                html += `<div class="node-label"><strong>${craftsNeeded}x craft</strong> ${esc(r.name)} <span class="tag tag-xp">${craftsNeeded * r.xpPerCraft} XP</span>${skillTag}</div>`;
+                if (r.bonusOutputs) {
+                    for (const b of r.bonusOutputs) {
+                        const expected = craftsNeeded * (b.chance / 100) * b.qty;
+                        html += `<div class="tree-node"><div class="node-label"><span class="tag tag-bonus">${b.chance}%</span> ~${Math.round(expected)}x ${esc(b.name)}</div></div>`;
+                    }
+                }
+                for (const inp of r.inputs) {
+                    const qtyNeeded = inp.qty * craftsNeeded;
+                    if (inp.type === 'material') {
+                        html += `<div class="tree-node"><div class="node-label">${qtyNeeded}x ${esc(getItemName('material', inp.id))} <span class="tag tag-mat">base</span></div></div>`;
+                    } else {
+                        const depRecipe = recipes.find(dr => dr.id === inp.id);
+                        if (depRecipe) {
+                            const depCrafts = Math.ceil(qtyNeeded / depRecipe.outputQty);
+                            html += buildTree(inp.id, depCrafts, depth + 1);
+                        }
+                    }
+                }
+                html += '</div>';
+                return html;
+            }
+
+            const treeHtml = buildTree(recipeId, craftCount, 0);
+
+            // Total XP from all intermediate crafts + breakdown by skill
+            let grandTotalXP = 0;
+            const skillXP = {};
+            for (const key in intermediates) {
+                const data = intermediates[key];
+                grandTotalXP += data.xp;
+                const sName = data.recipe.skillId ? (getSkillName(data.recipe.skillId) || 'Unknown') : 'Unassigned';
+                skillXP[sName] = (skillXP[sName] || 0) + data.xp;
+            }
+
+            resultsEl.innerHTML = `
+                <div class="results">
+                    <h3>Results</h3>
+                    <div class="results-summary">
+                        <div class="summary-card">
+                            <div class="label">Crafts of ${esc(recipe.name)}</div>
+                            <div class="value">${craftCount.toLocaleString()}</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="label">XP from ${esc(recipe.name)}</div>
+                            <div class="value">${totalXP.toLocaleString()}</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="label">Total XP (all crafts)</div>
+                            <div class="value">${grandTotalXP.toLocaleString()}</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="label">Items Produced</div>
+                            <div class="value">${(craftCount * recipe.outputQty).toLocaleString()}</div>
+                        </div>
+                    </div>
+
+                    ${Object.keys(skillXP).length > 0 && (Object.keys(skillXP).length > 1 || !skillXP['Unassigned']) ? `
+                        <h4 style="margin-bottom:8px;">XP by Skill</h4>
+                        <table class="skill-xp-table">
+                            <thead><tr><th>Skill</th><th>XP</th></tr></thead>
+                            <tbody>
+                                ${Object.entries(skillXP).map(([name, xp]) =>
+                                    `<tr><td class="skill-name"><span class="tag tag-skill">${esc(name)}</span></td><td class="qty">${xp.toLocaleString()}</td></tr>`
+                                ).join('')}
+                            </tbody>
+                        </table>
+                    ` : ''}
+
+                    <h4 style="margin:16px 0 8px;">Base Materials Needed</h4>
+                    <table>
+                        <thead><tr><th>Material</th><th>Quantity</th></tr></thead>
+                        <tbody>
+                            ${Object.entries(baseMaterials).map(([name, qty]) =>
+                                `<tr><td>${esc(name)}</td><td class="qty">${qty.toLocaleString()}</td></tr>`
+                            ).join('')}
+                        </tbody>
+                    </table>
+
+                    ${Object.keys(intermediates).length > 1 ? (() => {
+                        const anyMultiOutput = Object.values(intermediates).some(d => d.recipe.outputQty > 1);
+                        return `
+                        <h4 style="margin:16px 0 8px;">Intermediate Crafts</h4>
+                        <table>
+                            <thead><tr><th>Recipe</th><th>Skill</th><th>Crafts</th>${anyMultiOutput ? '<th>Total Output</th>' : ''}<th>XP</th></tr></thead>
+                            <tbody>
+                                ${Object.entries(intermediates).map(([name, data]) => {
+                                    const sName = data.recipe.skillId ? (getSkillName(data.recipe.skillId) || '?') : '-';
+                                    const totalOut = data.crafts * data.recipe.outputQty;
+                                    return `<tr><td>${esc(name)}</td><td><span class="tag tag-skill">${esc(sName)}</span></td><td class="qty">${data.crafts.toLocaleString()}</td>${anyMultiOutput ? `<td class="qty">${totalOut.toLocaleString()}</td>` : ''}<td>${data.xp.toLocaleString()}</td></tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>`;
+                    })() : ''}
+
+                    ${Object.keys(bonusYields).length > 0 ? `
+                        <h4 style="margin:16px 0 8px;">Estimated Bonus Yields</h4>
+                        <table class="bonus-table">
+                            <thead><tr><th>Item</th><th>Expected Qty</th><th>Source</th></tr></thead>
+                            <tbody>
+                                ${Object.entries(bonusYields).map(([name, data]) =>
+                                    `<tr>
+                                        <td><span class="tag tag-bonus">BONUS</span> ${esc(name)}</td>
+                                        <td class="qty">~${Math.round(data.expected).toLocaleString()}</td>
+                                        <td style="font-size:12px;color:#888;">${data.sources.map(s => `${s.chance}% from ${esc(s.recipe)} (${s.crafts} crafts)`).join(', ')}</td>
+                                    </tr>`
+                                ).join('')}
+                            </tbody>
+                        </table>
+                    ` : ''}
+
+                    <h4 style="margin:16px 0 8px;">Dependency Tree</h4>
+                    ${treeHtml}
+                </div>
+            `;
+        }
+
+        function renderTargetDropdown() {
+            const sel = document.getElementById('targetRecipe');
+            const current = sel.value;
+            sel.innerHTML = '<option value="">-- Select a recipe --</option>';
+            recipes.forEach(r => {
+                sel.innerHTML += `<option value="${r.id}">${esc(r.name)}</option>`;
+            });
+            if (current) sel.value = current;
+        }
+
+        // --- Util ---
+        function esc(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function renderTargetSkillDropdown() {
+            const sel = document.getElementById('targetSkill');
+            const current = sel.value;
+            sel.innerHTML = '<option value="">All skills (total XP)</option>';
+            skills.forEach(s => {
+                sel.innerHTML += `<option value="${s.id}">${esc(s.name)}</option>`;
+            });
+            if (current) sel.value = current;
+        }
+
+        function renderAll() {
+            renderMaterials();
+            renderSkills();
+            renderRecipes();
+            renderTargetDropdown();
+            renderTargetSkillDropdown();
+            calculate();
+        }
+
+        // --- Init ---
+        load();
+        renderAll();
+    </script>
+</body>
+</html>
